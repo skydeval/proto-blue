@@ -11,6 +11,7 @@ keywords = ["atproto", "bluesky", "cryptography", "signing", "did-key"]
 categories = ["cryptography", "authentication"]
 
 [dependencies]
+async-trait = { workspace = true, optional = true }
 p256 = { workspace = true }
 k256 = { workspace = true }
 sha2 = { workspace = true }
@@ -24,12 +25,21 @@ thiserror = { workspace = true }
 [dev-dependencies]
 serde_json = { workspace = true }
 proptest = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt"] }
 
 # Browser entropy — k256/p256/rand transitively depend on getrandom, which
 # refuses to compile for wasm32-unknown-unknown without an explicit backend.
 # The `js` feature routes it through `crypto.getRandomValues()`.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
+
+[features]
+# Adds the `AsyncSigner` trait (parallel to `Signer`) and a blanket impl
+# for every existing sync `Signer`. Consumers who need to plug async signing
+# transports (holder-mediated signing over a channel, hardware devices behind
+# async I/O, remote signing services) enable this feature; consumers with
+# purely local signing keys leave it off.
+async-signer = ["dep:async-trait"]
 
 [lints]
 workspace = true

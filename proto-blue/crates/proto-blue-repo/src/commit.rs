@@ -240,6 +240,47 @@ pub fn sign_commit(
     })
 }
 
+/// Async variant of [`sign_commit`]. Uses an [`AsyncSigner`], awaiting
+/// the signature.
+///
+/// Byte-identical output to `sign_commit` for any given
+/// (unsigned, signing key) pair — the DAG-CBOR encoding of the unsigned
+/// commit and the 64-byte compact signature layout are identical across
+/// the sync and async paths.
+///
+/// Intended for signing transports where the signing key is not held
+/// locally — e.g. did:web account holders signing from a browser or
+/// native app over a channel, hardware devices behind async I/O, or
+/// remote signing services.
+///
+/// # Example
+///
+/// ```ignore
+/// use proto_blue_repo::{UnsignedCommit, sign_commit_async};
+///
+/// # async fn example(unsigned: UnsignedCommit, signer: impl proto_blue_crypto::AsyncSigner)
+/// # -> Result<(), Box<dyn std::error::Error>> {
+/// let signed = sign_commit_async(&unsigned, &signer).await?;
+/// # Ok(())
+/// # }
+/// ```
+#[cfg(feature = "async-signer")]
+pub async fn sign_commit_async(
+    unsigned: &UnsignedCommit,
+    signer: &(dyn proto_blue_crypto::AsyncSigner + '_),
+) -> Result<SignedCommit, RepoError> {
+    let bytes = unsigned.to_signing_bytes()?;
+    let sig = signer.sign_async(&bytes).await?;
+    Ok(SignedCommit {
+        did: unsigned.did.clone(),
+        version: unsigned.version,
+        data: unsigned.data.clone(),
+        rev: unsigned.rev.clone(),
+        prev: unsigned.prev.clone(),
+        sig,
+    })
+}
+
 /// Verify a `SignedCommit`'s signature against a `did:key:z...` string.
 ///
 /// Strict (low-S, compact) — see `proto_blue_crypto::verify_signature`. The
@@ -422,5 +463,57 @@ mod tests {
             signed.cid().unwrap().to_string_base32(),
             signed.cid().unwrap().to_string_base32(),
         );
+    }
+
+    #[cfg(feature = "async-signer")]
+    #[tokio::test]
+    async fn sign_commit_async_via_blanket_impl_p256() {
+        // Any Signer works as an AsyncSigner via the crypto crate's blanket impl.
+        // Verifies the async path produces a valid, verifiable signature.
+        let kp = P256Keypair::generate();
+        let unsigned = sample_unsigned(None);
+        let signed = sign_commit_async(&unsigned, &kp).await.unwrap();
+        assert!(verify_commit_sig(&signed, &kp.did()).unwrap());
+    }
+
+    #[cfg(feature = "async-signer")]
+    #[tokio::test]
+    async fn sign_commit_async_via_blanket_impl_k256() {
+        let kp = K256Keypair::generate();
+        let unsigned = sample_unsigned(None);
+        let signed = sign_commit_async(&unsigned, &kp).await.unwrap();
+        assert!(verify_commit_sig(&signed, &kp.did()).unwrap());
+    }
+
+    /// Explicit AsyncSigner impl with an artificial .await point — proves
+    /// the trait works for genuinely-async signing transports (not just
+    /// the blanket-impl trivial case).
+    #[cfg(feature = "async-signer")]
+    #[tokio::test]
+    async fn sign_commit_async_with_explicit_impl() {
+        use proto_blue_crypto::{AsyncSigner, CryptoError, Signer};
+
+        struct DelayedSigner {
+            inner: P256Keypair,
+        }
+
+        #[async_trait::async_trait]
+        impl AsyncSigner for DelayedSigner {
+            fn jwt_alg(&self) -> &str {
+                "ES256"
+            }
+            async fn sign_async(&self, msg: &[u8]) -> Result<Vec<u8>, CryptoError> {
+                // Simulate the round-trip a holder-mediated signer would incur.
+                tokio::task::yield_now().await;
+                Signer::sign(&self.inner, msg)
+            }
+        }
+
+        let signer = DelayedSigner {
+            inner: P256Keypair::generate(),
+        };
+        let unsigned = sample_unsigned(None);
+        let signed = sign_commit_async(&unsigned, &signer).await.unwrap();
+        assert!(verify_commit_sig(&signed, &signer.inner.did()).unwrap());
     }
 }

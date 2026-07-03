@@ -11,6 +11,7 @@ keywords = ["atproto", "bluesky", "merkle-tree", "car", "repository"]
 categories = ["data-structures", "encoding"]
 
 [dependencies]
+async-trait = { workspace = true, optional = true }
 proto-blue-common = { workspace = true }
 proto-blue-crypto = { workspace = true }
 proto-blue-lexicon = { workspace = true }
@@ -40,6 +41,11 @@ default = ["firehose-client"]
 # tungstenite on native, gloo-net on wasm32 — see the target-conditional
 # dependency tables above.
 firehose-client = ["dep:proto-blue-ws"]
+# Adds `sign_commit_async` (parallel to `sign_commit`) taking an
+# `AsyncSigner` and awaiting the signature. Byte-identical output to
+# `sign_commit` for any given (unsigned, signing key) pair. Enable for
+# async signing transports; leave off for purely local keys.
+async-signer = ["dep:async-trait", "proto-blue-crypto/async-signer"]
 
 [dev-dependencies]
 proptest = { workspace = true }

@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **`proto-blue-crypto`**: new `AsyncSigner` trait paralleling `Signer`, plus
+  a blanket `impl<S: Signer> AsyncSigner for S` so every existing sync
+  signer is trivially usable via the async interface. Behind the new
+  `async-signer` feature (off by default). Enables consumers whose
+  signing transport is inherently async — holder-mediated signing over
+  a channel (did:web account holders signing from a browser or native
+  app), hardware devices behind async I/O (YubiKey, Ledger, secure
+  enclave), or remote signing services (HSM, key-management services)
+  — without forcing sync-over-async gymnastics at the call site.
+- **`proto-blue-repo`**: new `sign_commit_async` free function
+  paralleling `sign_commit`, taking an `AsyncSigner` and awaiting the
+  signature. Byte-identical output to `sign_commit` for any given
+  (unsigned, signing key) pair — the DAG-CBOR encoding of the unsigned
+  commit and the 64-byte compact signature layout are identical across
+  the sync and async paths. Wire format unchanged; differential tests
+  (audit item 5, #28) continue to pass on both paths. Behind the new
+  `async-signer` feature (off by default).
+
 ## [0.3.2] - 2026-05-14
 
 Packaging fix: the v0.3.1 workspace manifest declared `rust-version = "1.85"`

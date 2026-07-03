@@ -56,6 +56,8 @@ pub use cid_set::CidSet;
 pub use commit::{
     COMMIT_VERSION, SignedCommit, UnsignedCommit, ensure_commit_sig, sign_commit, verify_commit_sig,
 };
+#[cfg(feature = "async-signer")]
+pub use commit::sign_commit_async;
 pub use data_diff::{DataAdd, DataDelete, DataDiff, DataUpdate};
 pub use data_key::{DataKey, DataKeyError, format_data_key, parse_data_key};
 pub use error::RepoError;
