@@ -34,7 +34,7 @@ tokio = { workspace = true, features = ["macros", "rt"] }
 getrandom = { version = "0.2", features = ["js"] }
 
 [features]
-# Adds the `AsyncSigner` trait (parallel to `Signer`) and a blanket impl
+# Adds the `AsyncSign` trait (parallel to `Signer`) and a blanket impl
 # for every existing sync `Signer`. Consumers who need to plug async signing
 # transports (holder-mediated signing over a channel, hardware devices behind
 # async I/O, remote signing services) enable this feature; consumers with

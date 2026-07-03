@@ -120,9 +120,9 @@ impl<K: Keypair> Keypair for SealedKeypair<K> {
 /// signing from a browser or native app), hardware devices behind async
 /// I/O, or remote signing services.
 ///
-/// Every existing [`Signer`] is trivially an `AsyncSigner` via a blanket
+/// Every existing [`Signer`] is trivially an `AsyncSign` via a blanket
 /// impl below — code holding a local `P256Keypair` or `K256Keypair` can be
-/// used through the `AsyncSigner` interface with zero changes.
+/// used through the `AsyncSign` interface with zero changes.
 ///
 /// # Contract
 ///
@@ -136,16 +136,16 @@ impl<K: Keypair> Keypair for SealedKeypair<K> {
 /// # Example
 ///
 /// ```ignore
-/// use proto_blue_crypto::{AsyncSigner, P256Keypair};
+/// use proto_blue_crypto::{AsyncSign, P256Keypair};
 ///
 /// let kp = P256Keypair::generate();
-/// // Any Signer is trivially an AsyncSigner via blanket impl:
-/// let sig = <P256Keypair as AsyncSigner>::sign_async(&kp, b"hello").await.unwrap();
+/// // Any Signer is trivially an AsyncSign via blanket impl:
+/// let sig = <P256Keypair as AsyncSign>::sign_async(&kp, b"hello").await.unwrap();
 /// assert_eq!(sig.len(), 64);
 /// ```
 #[cfg(feature = "async-signer")]
 #[async_trait::async_trait]
-pub trait AsyncSigner: Send + Sync {
+pub trait AsyncSign: Send + Sync {
     /// The JWT algorithm identifier (e.g., `"ES256"` or `"ES256K"`).
     fn jwt_alg(&self) -> &str;
 
@@ -157,12 +157,12 @@ pub trait AsyncSigner: Send + Sync {
 }
 
 /// Blanket impl: every synchronous [`Signer`] is trivially an
-/// [`AsyncSigner`]. Enables gradual adoption — existing code that takes
-/// a sync `Signer` can be lifted to `AsyncSigner` without changing the
+/// [`AsyncSign`]. Enables gradual adoption — existing code that takes
+/// a sync `Signer` can be lifted to `AsyncSign` without changing the
 /// underlying keypair type.
 #[cfg(feature = "async-signer")]
 #[async_trait::async_trait]
-impl<S: Signer> AsyncSigner for S {
+impl<S: Signer> AsyncSign for S {
     fn jwt_alg(&self) -> &str {
         Signer::jwt_alg(self)
     }
@@ -211,7 +211,7 @@ mod tests {
         let kp = P256Keypair::generate();
         let msg = b"async signer test";
         let sync_sig = Signer::sign(&kp, msg).unwrap();
-        let async_sig = <P256Keypair as AsyncSigner>::sign_async(&kp, msg)
+        let async_sig = <P256Keypair as AsyncSign>::sign_async(&kp, msg)
             .await
             .unwrap();
         // ECDSA is nondeterministic; can't compare signatures directly.
@@ -221,7 +221,7 @@ mod tests {
         // Both jwt_alg calls should return the same value.
         assert_eq!(
             <P256Keypair as Signer>::jwt_alg(&kp),
-            <P256Keypair as AsyncSigner>::jwt_alg(&kp)
+            <P256Keypair as AsyncSign>::jwt_alg(&kp)
         );
     }
 
@@ -231,7 +231,7 @@ mod tests {
         // SealedKeypair<P256Keypair> also gets the blanket impl.
         let kp = P256Keypair::generate();
         let sealed = SealedKeypair::seal(kp);
-        let sig = <SealedKeypair<P256Keypair> as AsyncSigner>::sign_async(&sealed, b"sealed test")
+        let sig = <SealedKeypair<P256Keypair> as AsyncSign>::sign_async(&sealed, b"sealed test")
             .await
             .unwrap();
         assert_eq!(sig.len(), 64);

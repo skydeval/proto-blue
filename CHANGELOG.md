@@ -7,8 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- **`proto-blue-crypto`**: new `AsyncSigner` trait paralleling `Signer`, plus
-  a blanket `impl<S: Signer> AsyncSigner for S` so every existing sync
+- **`proto-blue-crypto`**: new `AsyncSign` trait paralleling `Signer`, plus
+  a blanket `impl<S: Signer> AsyncSign for S` so every existing sync
   signer is trivially usable via the async interface. Behind the new
   `async-signer` feature (off by default). Enables consumers whose
   signing transport is inherently async — holder-mediated signing over
@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   enclave), or remote signing services (HSM, key-management services)
   — without forcing sync-over-async gymnastics at the call site.
 - **`proto-blue-repo`**: new `sign_commit_async` free function
-  paralleling `sign_commit`, taking an `AsyncSigner` and awaiting the
+  paralleling `sign_commit`, taking an `AsyncSign` and awaiting the
   signature. Byte-identical output to `sign_commit` for any given
   (unsigned, signing key) pair — the DAG-CBOR encoding of the unsigned
   commit and the 64-byte compact signature layout are identical across

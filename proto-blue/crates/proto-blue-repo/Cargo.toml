@@ -42,7 +42,7 @@ default = ["firehose-client"]
 # dependency tables above.
 firehose-client = ["dep:proto-blue-ws"]
 # Adds `sign_commit_async` (parallel to `sign_commit`) taking an
-# `AsyncSigner` and awaiting the signature. Byte-identical output to
+# `AsyncSign` and awaiting the signature. Byte-identical output to
 # `sign_commit` for any given (unsigned, signing key) pair. Enable for
 # async signing transports; leave off for purely local keys.
 async-signer = ["dep:async-trait", "proto-blue-crypto/async-signer"]

@@ -49,7 +49,7 @@ pub use error::CryptoError;
 pub use k256_impl::{K256Keypair, compress_pubkey as k256_compress_pubkey};
 pub use keypair::{ExportableKeypair, Keypair, SealedKeypair, Signer, Verifier};
 #[cfg(feature = "async-signer")]
-pub use keypair::AsyncSigner;
+pub use keypair::AsyncSign;
 pub use p256_impl::{P256Keypair, compress_pubkey as p256_compress_pubkey};
 pub use random::{StrEncoding, random_bytes, random_int_from_seed, random_str};
 pub use sha::{sha256, sha256_hex};

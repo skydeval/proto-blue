@@ -240,7 +240,7 @@ pub fn sign_commit(
     })
 }
 
-/// Async variant of [`sign_commit`]. Uses an [`AsyncSigner`], awaiting
+/// Async variant of [`sign_commit`]. Uses an [`AsyncSign`], awaiting
 /// the signature.
 ///
 /// Byte-identical output to `sign_commit` for any given
@@ -258,7 +258,7 @@ pub fn sign_commit(
 /// ```ignore
 /// use proto_blue_repo::{UnsignedCommit, sign_commit_async};
 ///
-/// # async fn example(unsigned: UnsignedCommit, signer: impl proto_blue_crypto::AsyncSigner)
+/// # async fn example(unsigned: UnsignedCommit, signer: impl proto_blue_crypto::AsyncSign)
 /// # -> Result<(), Box<dyn std::error::Error>> {
 /// let signed = sign_commit_async(&unsigned, &signer).await?;
 /// # Ok(())
@@ -267,7 +267,7 @@ pub fn sign_commit(
 #[cfg(feature = "async-signer")]
 pub async fn sign_commit_async(
     unsigned: &UnsignedCommit,
-    signer: &(dyn proto_blue_crypto::AsyncSigner + '_),
+    signer: &(dyn proto_blue_crypto::AsyncSign + '_),
 ) -> Result<SignedCommit, RepoError> {
     let bytes = unsigned.to_signing_bytes()?;
     let sig = signer.sign_async(&bytes).await?;
@@ -468,7 +468,7 @@ mod tests {
     #[cfg(feature = "async-signer")]
     #[tokio::test]
     async fn sign_commit_async_via_blanket_impl_p256() {
-        // Any Signer works as an AsyncSigner via the crypto crate's blanket impl.
+        // Any Signer works as an AsyncSign via the crypto crate's blanket impl.
         // Verifies the async path produces a valid, verifiable signature.
         let kp = P256Keypair::generate();
         let unsigned = sample_unsigned(None);
@@ -485,20 +485,20 @@ mod tests {
         assert!(verify_commit_sig(&signed, &kp.did()).unwrap());
     }
 
-    /// Explicit AsyncSigner impl with an artificial .await point — proves
+    /// Explicit AsyncSign impl with an artificial .await point — proves
     /// the trait works for genuinely-async signing transports (not just
     /// the blanket-impl trivial case).
     #[cfg(feature = "async-signer")]
     #[tokio::test]
     async fn sign_commit_async_with_explicit_impl() {
-        use proto_blue_crypto::{AsyncSigner, CryptoError, Signer};
+        use proto_blue_crypto::{AsyncSign, CryptoError, Signer};
 
         struct DelayedSigner {
             inner: P256Keypair,
         }
 
         #[async_trait::async_trait]
-        impl AsyncSigner for DelayedSigner {
+        impl AsyncSign for DelayedSigner {
             fn jwt_alg(&self) -> &str {
                 "ES256"
             }
